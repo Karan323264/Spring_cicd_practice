@@ -10,6 +10,6 @@ public class CiCdController {
 	
 	@GetMapping("/hello")
 	public String hello() {
-		return "Hello from CI/CD practice..";
+		return "Hello from CI/CD practice.. Welcome to the world of DevOps and Continuous Integration/Continuous Deployment!";
 	}
 }
