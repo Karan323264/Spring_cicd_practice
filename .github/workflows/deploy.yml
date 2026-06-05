@@ -42,13 +42,13 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           script: |
-            docker stop springcicd-demo || true
-            docker rm springcicd-demo || true
-
+            docker stop spring-cicd-container || true
+            docker rm spring-cicd-container || true
+          
             docker pull ${{ secrets.DOCKER_USERNAME }}/springcicd:latest
-
+          
             docker run -d \
               --restart unless-stopped \
-              --name springcicd-demo \
+              --name spring-cicd-container \
               -p 9091:9091 \
               ${{ secrets.DOCKER_USERNAME }}/springcicd:latest
