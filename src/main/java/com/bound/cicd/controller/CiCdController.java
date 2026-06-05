@@ -10,6 +10,6 @@ public class CiCdController {
 	
 	@GetMapping("/hello")
 	public String hello() {
-		return "Hello from CI/CD practice.. so how are u guys";
+		return "Hello from CI/CD practice.. so how are u guys qui passa ma NIGGA";
 	}
 }
