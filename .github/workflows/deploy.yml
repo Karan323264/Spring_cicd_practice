@@ -2,7 +2,8 @@ name: Docker Build -> Push -> Deploy
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
   build-and-deploy:
@@ -10,36 +11,44 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: Setup Java
-      uses: actions/setup-java@v5
-      with:
-        distribution: 'temurin' # See 'Supported distributions' for available options
-        java-version: '25'
+      - name: Setup Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
 
-    - name: Build Jar
-      run: ./mvnw clean package -DskipTests
+      - name: Make Maven Wrapper Executable
+        run: chmod +x mvnw
 
-    - name: Login to DockerHub
-      run: docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+      - name: Build Jar
+        run: ./mvnw clean package -DskipTests
 
-    - name: Build the Docker Image
-      run: docker build -t ${{ secrets.DOCKER_USERNAME }}/spring-cicd:latest
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-    - name: Push the Docker Image to DockerHub
-      run: docker push ${{ secrets.DOCKER_USERNAME }}/springcicd:latest
+      - name: Build Docker Image
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/springcicd:latest .
 
-    - name: Deploy to EC2 using SSH
-      uses: appleboy/ssh-action@v1
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_KEY }}
-        script: |
-          docker stop springcicd-demo || true
-          docker rm springcicd-demo
-          docker pull ${{ secrets.DOCKER_USERNAME }}/springcicd:latest
-          docker run -d --name springcicd-demo -p 9091:9091 ${{ secrets.DOCKER_USERNAME }}/springcicd:latest
-    
+      - name: Push Docker Image
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/springcicd:latest
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            docker stop springcicd-demo || true
+            docker rm springcicd-demo || true
+
+            docker pull ${{ secrets.DOCKER_USERNAME }}/springcicd:latest
+
+            docker run -d \
+              --restart unless-stopped \
+              --name springcicd-demo \
+              -p 9091:9091 \
+              ${{ secrets.DOCKER_USERNAME }}/springcicd:latest
